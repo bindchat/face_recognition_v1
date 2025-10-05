@@ -1,5 +1,7 @@
 # YOLO Face Recognition System
 
+[English](README.md) | [中文](README.zh-CN.md)
+
 A comprehensive face recognition system that uses YOLO for face detection and deep learning for face identification. Supports both image and real-time camera recognition with an easy-to-use face database management tool.
 
 ## Features
