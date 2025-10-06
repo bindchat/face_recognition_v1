@@ -467,7 +467,8 @@ class FaceRecognitionGUI:
                 self.log("🔧 正在初始化识别器...")
                 self.recognizer = YOLOFaceRecognizer(
                     db_path=self.db_path,
-                    confidence=self.confidence_var.get()
+                    confidence=self.confidence_var.get(),
+                    font_path=os.getenv('CHINESE_FONT_PATH')
                 )
             
             # 读取图片
@@ -530,7 +531,8 @@ class FaceRecognitionGUI:
                 self.log("🔧 正在初始化识别器...")
                 self.recognizer = YOLOFaceRecognizer(
                     db_path=self.db_path,
-                    confidence=self.confidence_var.get()
+                    confidence=self.confidence_var.get(),
+                    font_path=os.getenv('CHINESE_FONT_PATH')
                 )
             
             # 设置状态

@@ -13,6 +13,8 @@ import face_recognition  # 人脸识别工具
 import pickle  # 用来读取保存的数据
 import os  # 操作系统工具
 from ultralytics import YOLO  # YOLO模型 - 快速物体检测工具
+from PIL import Image, ImageDraw, ImageFont  # 使用Pillow渲染中文文字
+from typing import Optional, List, Dict, Union
 
 
 class YOLOFaceRecognizer:
@@ -24,7 +26,8 @@ class YOLOFaceRecognizer:
     3. 在脸上画框并标注名字
     """
     
-    def __init__(self, db_path='face_database.pkl', yolo_model='yolov8n.pt', confidence=0.5):
+    def __init__(self, db_path='face_database.pkl', yolo_model='yolov8n.pt', confidence=0.5,
+                 font_path: Optional[str] = None, font_size: int = 20):
         """
         【初始化识别器】
         准备好识别器需要的所有工具和数据
@@ -39,6 +42,10 @@ class YOLOFaceRecognizer:
         self.confidence = confidence  # 保存信心阈值
         self.known_face_encodings = []  # 存放已知人脸的特征（空列表）
         self.known_face_names = []  # 存放已知人脸的名字（空列表）
+        # 中文文字渲染配置
+        self.font_path = font_path  # 可选：自定义中文字体路径
+        self.font_size = font_size  # 可选：中文标签字号
+        self._font = None  # 延迟加载字体
         
         # 加载人脸数据库
         self.load_database()
@@ -47,6 +54,111 @@ class YOLOFaceRecognizer:
         print("正在加载YOLO模型...")
         self.yolo_model = YOLO(yolo_model)  # 加载AI模型
         print("✓ YOLO模型加载完成")
+
+    def _resolve_font_path(self) -> Optional[str]:
+        """
+        解析中文字体路径：优先使用传入的 font_path 或环境变量，其次尝试常见系统路径。
+        返回可用字体文件的绝对路径，如果找不到则返回 None。
+        """
+        # 优先级：构造参数 > 环境变量 > 常见路径
+        candidate_paths: list[str | None] = [
+            self.font_path,
+            os.getenv('CHINESE_FONT_PATH'),
+            # Linux 常见中文字体
+            '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+            '/usr/share/fonts/truetype/noto/NotoSansSC-Regular.otf',
+            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+            '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',           # 文泉驿正黑
+            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',         # 文泉驿微米黑
+            '/usr/share/fonts/truetype/arphic/ukai.ttc',              # AR PL UKai
+            # macOS 常见中文字体
+            '/System/Library/Fonts/PingFang.ttc',
+            '/System/Library/Fonts/STHeiti Light.ttc',
+            # Windows 常见中文字体
+            r'C:\\Windows\\Fonts\\msyh.ttc',
+            r'C:\\Windows\\Fonts\\msyhbd.ttc',
+            r'C:\\Windows\\Fonts\\simhei.ttf',
+            r'C:\\Windows\\Fonts\\simsun.ttc',
+        ]
+
+        for path in candidate_paths:
+            if path and os.path.exists(path):
+                return path
+        return None
+
+    def _get_font(self) -> Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]:
+        """
+        懒加载字体对象。如果找到中文字体则返回 TrueType 字体，找不到则回退默认字体。
+        """
+        if self._font is not None:
+            return self._font
+
+        resolved_path = self._resolve_font_path()
+        try:
+            if resolved_path:
+                self._font = ImageFont.truetype(resolved_path, self.font_size)
+            else:
+                # 回退到默认字体（可能不支持中文，但避免崩溃）
+                self._font = ImageFont.load_default()
+        except Exception:
+            self._font = ImageFont.load_default()
+        return self._font
+
+    def _draw_labels_pil(self, frame: np.ndarray, labels_info: List[Dict]) -> np.ndarray:
+        """
+        使用 Pillow 在图像上绘制中文标签，避免 OpenCV putText 的中文乱码问题。
+
+        labels_info: 每项包含 {text, x1, y1, x2, y2, bg_bgr}
+        返回：绘制完标签的 BGR 图像
+        """
+        if not labels_info:
+            return frame
+
+        # OpenCV(BGR ndarray) -> PIL(RGB Image)
+        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(rgb_image)
+        drawer = ImageDraw.Draw(pil_image)
+        font = self._get_font()
+
+        image_height, image_width = frame.shape[:2]
+
+        for info in labels_info:
+            text = info['text']
+            x1 = info['x1']
+            y1 = info['y1']
+            x2 = info['x2']
+            y2 = info['y2']
+            bg_bgr = info['bg_bgr']
+
+            # 计算文本尺寸
+            try:
+                left, top, right, bottom = drawer.textbbox((0, 0), text, font=font)
+                text_w = max(1, right - left)
+                text_h = max(1, bottom - top)
+            except Exception:
+                # 旧 Pillow 兜底
+                text_w, text_h = drawer.textsize(text, font=font)
+
+            # 计算放置位置：优先放在框上方，放不下则放在框下方
+            tx = max(0, min(x1, image_width - text_w - 8))
+            ty = y1 - text_h - 8
+            if ty < 0:
+                ty = min(y2 + 2, max(0, image_height - text_h - 6))
+
+            # 背景矩形
+            box_x1 = tx
+            box_y1 = ty
+            box_x2 = min(image_width - 1, tx + text_w + 8)
+            box_y2 = min(image_height - 1, ty + text_h + 6)
+
+            # 颜色转换 BGR -> RGB
+            bg_rgb = (int(bg_bgr[2]), int(bg_bgr[1]), int(bg_bgr[0]))
+
+            drawer.rectangle([(box_x1, box_y1), (box_x2, box_y2)], fill=bg_rgb)
+            drawer.text((tx + 4, ty + 3), text, fill=(255, 255, 255), font=font)
+
+        # PIL(RGB) -> OpenCV(BGR)
+        return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
     
     def load_database(self):
         """
@@ -191,33 +303,34 @@ class YOLOFaceRecognizer:
         返回值：
             画好标记的图片
         """
-        # 遍历每个识别结果
+        # 先画检测框，再统一用 Pillow 绘制中文标签，避免中文乱码
+        label_tasks: List[Dict] = []
+
         for name, confidence, (x1, y1, x2, y2) in results:
             # 根据是否识别成功选择颜色
             if name == "未知":
-                color = (0, 0, 255)  # 红色表示不认识
+                color = (0, 0, 255)  # 红色表示不认识（BGR）
             else:
-                color = (0, 255, 0)  # 绿色表示认识
-            
-            # 画矩形框（在脸周围）
-            # 参数：图片、左上角坐标、右下角坐标、颜色、线条粗细
+                color = (0, 255, 0)  # 绿色表示认识（BGR）
+
+            # 人脸检测框（使用 OpenCV 绘制）
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            
+
             # 准备标签文字（名字和信心值）
-            label = f"{name} ({confidence:.2f})"
-            
-            # 计算标签文字的大小
-            # 需要知道文字有多大，才能画一个合适的背景框
-            (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
-            
-            # 画标签背景（一个填充的矩形，让文字更清楚）
-            cv2.rectangle(frame, (x1, y1 - label_h - 10), (x1 + label_w, y1), color, -1)
-            
-            # 画标签文字（白色文字）
-            # 参数：图片、文字内容、位置、字体、大小、颜色、粗细
-            cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 
-                       0.6, (255, 255, 255), 2)
-        
+            label_text = f"{name} ({confidence:.2f})"
+
+            label_tasks.append({
+                'text': label_text,
+                'x1': x1,
+                'y1': y1,
+                'x2': x2,
+                'y2': y2,
+                'bg_bgr': color,
+            })
+
+        # 使用 Pillow 渲染中文标签
+        frame = self._draw_labels_pil(frame, label_tasks)
+
         return frame  # 返回画好的图片
     
     def process_image(self, image_path, output_path=None, show=True):
