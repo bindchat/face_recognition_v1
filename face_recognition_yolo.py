@@ -12,7 +12,31 @@ import numpy as np  # NumPy - 数学计算工具，用来处理数字和数组
 import face_recognition  # 人脸识别工具
 import pickle  # 用来读取保存的数据
 import os  # 操作系统工具
+import sys  # 标准输入输出编码配置
 from ultralytics import YOLO  # YOLO模型 - 快速物体检测工具
+from PIL import Image, ImageDraw, ImageFont  # 使用PIL正确渲染中文文本
+
+
+def _ensure_utf8_stdio() -> None:
+    """确保标准输出/错误为UTF-8，避免中文打印乱码。"""
+    try:
+        # Python 3.7+ 提供 reconfigure
+        if hasattr(sys.stdout, "reconfigure"):
+            try:
+                sys.stdout.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+        if hasattr(sys.stderr, "reconfigure"):
+            try:
+                sys.stderr.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+    except Exception:
+        # 最后兜底，不抛异常影响主流程
+        pass
+
+
+_ensure_utf8_stdio()
 
 
 class YOLOFaceRecognizer:
@@ -191,34 +215,93 @@ class YOLOFaceRecognizer:
         返回值：
             画好标记的图片
         """
-        # 遍历每个识别结果
+        # 先用OpenCV画框，再用PIL绘制中文标签，避免cv2.putText中文乱码
+        labels_to_draw = []  # 收集待绘制的标签：(文本, 颜色BGR, x1, y1)
+
         for name, confidence, (x1, y1, x2, y2) in results:
             # 根据是否识别成功选择颜色
             if name == "未知":
-                color = (0, 0, 255)  # 红色表示不认识
+                color = (0, 0, 255)  # 红色表示不认识（BGR）
             else:
-                color = (0, 255, 0)  # 绿色表示认识
-            
+                color = (0, 255, 0)  # 绿色表示认识（BGR）
+
             # 画矩形框（在脸周围）
-            # 参数：图片、左上角坐标、右下角坐标、颜色、线条粗细
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-            
-            # 准备标签文字（名字和信心值）
+
+            # 标签文本（可能包含中文）
             label = f"{name} ({confidence:.2f})"
-            
-            # 计算标签文字的大小
-            # 需要知道文字有多大，才能画一个合适的背景框
-            (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
-            
-            # 画标签背景（一个填充的矩形，让文字更清楚）
-            cv2.rectangle(frame, (x1, y1 - label_h - 10), (x1 + label_w, y1), color, -1)
-            
-            # 画标签文字（白色文字）
-            # 参数：图片、文字内容、位置、字体、大小、颜色、粗细
-            cv2.putText(frame, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 
-                       0.6, (255, 255, 255), 2)
-        
-        return frame  # 返回画好的图片
+            labels_to_draw.append((label, color, x1, y1))
+
+        if not labels_to_draw:
+            return frame
+
+        # 转换为PIL图片以支持中文字体渲染
+        pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        drawer = ImageDraw.Draw(pil_image)
+
+        # 选择字体（优先常见中文字体，找不到则使用默认字体）
+        font = self._get_draw_font(size=18)
+
+        for label, bgr_color, x1, y1 in labels_to_draw:
+            # PIL使用RGB颜色
+            rgb_color = (bgr_color[2], bgr_color[1], bgr_color[0])
+
+            # 计算文本尺寸
+            try:
+                # Pillow>=8 提供 textbbox 更准确
+                bbox = drawer.textbbox((0, 0), label, font=font)
+                label_w, label_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            except Exception:
+                label_w, label_h = drawer.textsize(label, font=font)
+
+            # 背景矩形（稍微留出内边距）
+            pad_x, pad_y = 6, 4
+            bg_top = max(0, y1 - label_h - pad_y * 2)
+            drawer.rectangle(
+                [x1, bg_top, x1 + label_w + pad_x * 2, y1],
+                fill=rgb_color,
+            )
+
+            # 绘制白色文字
+            drawer.text((x1 + pad_x, bg_top + pad_y), label, font=font, fill=(255, 255, 255))
+
+        # 转回OpenCV的BGR图像
+        frame = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+        return frame
+
+    def _get_draw_font(self, size: int = 18) -> ImageFont.FreeTypeFont:
+        """返回一个尽可能支持中文的字体对象。找不到时回退到默认字体。"""
+        # 常见中文字体候选路径（Linux / macOS / Windows）
+        candidate_paths = [
+            # Linux 常见
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+            "/usr/share/fonts/truetype/arphic/ukai.ttc",
+            "/usr/share/fonts/truetype/arphic/uming.ttc",
+            # macOS 常见
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/Hiragino Sans GB W3.ttc",
+            "/System/Library/Fonts/STHeiti Medium.ttc",
+            # Windows 常见
+            "C:/Windows/Fonts/msyh.ttc",  # 微软雅黑
+            "C:/Windows/Fonts/simhei.ttf",  # 黑体
+            "C:/Windows/Fonts/simsun.ttc",  # 宋体
+        ]
+
+        for path in candidate_paths:
+            if os.path.exists(path):
+                try:
+                    return ImageFont.truetype(path, size=size)
+                except Exception:
+                    continue
+        # 回退：默认字体（可能不支持中文，但保证不报错）
+        try:
+            return ImageFont.load_default()
+        except Exception:
+            # 极端情况下，再兜底一次
+            return ImageFont.load_default()
     
     def process_image(self, image_path, output_path=None, show=True):
         """

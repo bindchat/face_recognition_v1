@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 【图片人脸识别程序】
 这是一个简单易用的图片识别工具
@@ -10,6 +11,23 @@
 import sys  # 系统工具
 import argparse  # 命令行参数解析器
 from face_recognition_yolo import YOLOFaceRecognizer  # 导入人脸识别器
+
+
+def _ensure_utf8_stdio() -> None:
+    """确保标准输出/错误为UTF-8，避免中文打印乱码。"""
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            try:
+                sys.stdout.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+        if hasattr(sys.stderr, "reconfigure"):
+            try:
+                sys.stderr.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+    except Exception:
+        pass
 
 
 def main():
@@ -98,4 +116,5 @@ def main():
 # 这是Python的标准写法，表示"如果直接运行这个文件，就执行main()函数"
 # 如果这个文件被其他程序导入（import），则不会自动执行main()
 if __name__ == '__main__':
+    _ensure_utf8_stdio()
     main()

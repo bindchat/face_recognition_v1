@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 【人脸数据库管理工具】
 这个程序用来管理人脸数据库，就像管理一个电子相册
@@ -6,12 +7,33 @@
 """
 
 # 导入需要的工具包（就像打开工具箱）
+import sys  # 标准输入输出编码配置
 import os  # 操作系统工具，用来处理文件和文件夹
 import pickle  # 腌制工具，用来保存和读取数据（pickle在英语里是腌菜的意思）
 import argparse  # 参数解析器，用来处理命令行输入
 import face_recognition  # 人脸识别工具，用来识别和分析人脸
 import cv2  # OpenCV图像处理库，用来读取和处理图片
 from pathlib import Path  # 路径工具，用来处理文件路径
+
+
+def _ensure_utf8_stdio() -> None:
+    """确保标准输出/错误为UTF-8，避免中文打印乱码。"""
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            try:
+                sys.stdout.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+        if hasattr(sys.stderr, "reconfigure"):
+            try:
+                sys.stderr.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+_ensure_utf8_stdio()
 
 
 class FaceDatabase:
@@ -271,4 +293,5 @@ def main():
 # 程序启动代码
 # 如果直接运行这个文件，就会执行main()函数
 if __name__ == '__main__':
+    _ensure_utf8_stdio()
     main()
