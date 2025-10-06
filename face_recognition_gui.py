@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 【人脸识别图形界面程序】
 这是一个带图形界面的人脸识别系统
@@ -7,6 +8,7 @@
 """
 
 # 导入需要的工具包
+import sys  # 标准输入输出编码配置
 import tkinter as tk  # Tkinter - Python自带的图形界面工具
 from tkinter import ttk, filedialog, messagebox, scrolledtext  # 各种界面组件
 import threading  # 多线程工具，让程序不会卡住
@@ -15,6 +17,26 @@ from PIL import Image, ImageTk  # 图像处理工具，用来在界面上显示�
 import os  # 文件操作工具
 from face_database import FaceDatabase  # 人脸数据库管理
 from face_recognition_yolo import YOLOFaceRecognizer  # 人脸识别器
+
+
+def _ensure_utf8_stdio() -> None:
+    """确保标准输出/错误为UTF-8，避免中文打印乱码。"""
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            try:
+                sys.stdout.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+        if hasattr(sys.stderr, "reconfigure"):
+            try:
+                sys.stderr.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+_ensure_utf8_stdio()
 
 
 class FaceRecognitionGUI:
@@ -674,4 +696,5 @@ def main():
 if __name__ == '__main__':
     # 需要导入简单对话框工具
     import tkinter.simpledialog
+    _ensure_utf8_stdio()
     main()
