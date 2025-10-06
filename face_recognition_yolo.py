@@ -53,7 +53,7 @@ class YOLOFaceRecognizer:
         # 初始化YOLO模型
         print("正在加载YOLO模型...")
         self.yolo_model = YOLO(yolo_model)  # 加载AI模型
-        print("✓ YOLO模型加载完成")
+        print(" YOLO模型加载完成")
 
     def _resolve_font_path(self) -> Optional[str]:
         """
@@ -171,7 +171,7 @@ class YOLOFaceRecognizer:
         """
         # 检查数据库文件是否存在
         if not os.path.exists(self.db_path):
-            print(f"⚠ 警告：找不到人脸数据库文件：{self.db_path}")
+            print(f" 警告：找不到人脸数据库文件：{self.db_path}")
             print("  请先运行 'python face_database.py import <文件夹>' 来创建数据库")
             return False
         
@@ -182,10 +182,10 @@ class YOLOFaceRecognizer:
                 self.known_face_encodings = data.get('encodings', [])  # 获取人脸特征
                 self.known_face_names = data.get('names', [])  # 获取人脸名字
             
-            print(f"✓ 成功加载了 {len(self.known_face_names)} 张人脸数据")
+            print(f" 成功加载了 {len(self.known_face_names)} 张人脸数据")
             return True
         except Exception as e:
-            print(f"✗ 加载数据库时出错：{e}")
+            print(f" 加载数据库时出错：{e}")
             return False
     
     def recognize_faces_in_frame(self, frame):
@@ -349,7 +349,7 @@ class YOLOFaceRecognizer:
         # 读取图片文件
         frame = cv2.imread(image_path)
         if frame is None:
-            print(f"✗ 错误：无法读取图片 {image_path}")
+            print(f" 错误：无法读取图片 {image_path}")
             return []
         
         # 识别图片中的人脸
@@ -369,7 +369,7 @@ class YOLOFaceRecognizer:
         # 如果指定了输出路径，保存结果图片
         if output_path:
             cv2.imwrite(output_path, output_frame)
-            print(f"✓ 结果已保存到 {output_path}")
+            print(f" 结果已保存到 {output_path}")
         
         # 打印识别结果摘要
         print(f"\n检测到 {len(results)} 张人脸：")
@@ -392,10 +392,10 @@ class YOLOFaceRecognizer:
         
         # 检查摄像头是否成功打开
         if not cap.isOpened():
-            print(f"✗ 错误：无法打开摄像头 {camera_id}")
+            print(f" 错误：无法打开摄像头 {camera_id}")
             return
         
-        print("✓ 摄像头已打开。按 'q' 键退出。")
+        print(" 摄像头已打开。按 'q' 键退出。")
         
         # 处理视频帧（循环）
         frame_count = 0  # 帧计数器
@@ -403,7 +403,7 @@ class YOLOFaceRecognizer:
             # 读取一帧画面
             ret, frame = cap.read()
             if not ret:
-                print("✗ 错误：无法读取摄像头画面")
+                print(" 错误：无法读取摄像头画面")
                 break
             
             # 每一帧都进行识别
@@ -425,7 +425,7 @@ class YOLOFaceRecognizer:
         # 清理工作
         cap.release()  # 释放摄像头
         cv2.destroyAllWindows()  # 关闭所有窗口
-        print("✓ 摄像头已关闭")
+        print(" 摄像头已关闭")
 
 
 def main():

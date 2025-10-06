@@ -33,7 +33,7 @@ class FaceRecognitionGUI:
             root: 主窗口对象（Tkinter的根窗口）
         """
         self.root = root
-        self.root.title("🎯 人脸识别系统 - 图形界面")  # 设置窗口标题
+        self.root.title(" 人脸识别系统 - 图形界面")  # 设置窗口标题
         self.root.geometry("900x700")  # 设置窗口大小（宽x高）
         
         # 设置变量
@@ -59,7 +59,7 @@ class FaceRecognitionGUI:
         # 主标题
         title_label = tk.Label(
             title_frame, 
-            text="🎯 人脸识别系统", 
+            text=" 人脸识别系统", 
             font=("Arial", 24, "bold"),
             bg="#4A90E2", 
             fg="white"
@@ -83,7 +83,7 @@ class FaceRecognitionGUI:
         # --- 数据库管理区域 ---
         db_label = tk.Label(
             left_frame, 
-            text="📁 数据库管理", 
+            text="数据库管理",
             font=("Arial", 14, "bold"),
             bg="#E8F4F8",
             pady=5
@@ -93,7 +93,7 @@ class FaceRecognitionGUI:
         # 按钮1：从文件夹导入人脸
         self.import_btn = tk.Button(
             left_frame,
-            text="📂 从文件夹导入人脸",
+            text=" 从文件夹导入人脸",
             command=self.import_faces,
             bg="#4CAF50",
             fg="white",
@@ -107,7 +107,7 @@ class FaceRecognitionGUI:
         # 按钮2：添加单张人脸
         self.add_face_btn = tk.Button(
             left_frame,
-            text="➕ 添加单张人脸",
+            text=" 添加单张人脸",
             command=self.add_single_face,
             bg="#2196F3",
             fg="white",
@@ -121,7 +121,7 @@ class FaceRecognitionGUI:
         # 按钮3：查看数据库
         self.view_db_btn = tk.Button(
             left_frame,
-            text="👁️ 查看数据库",
+            text=" 查看数据库",
             command=self.view_database,
             bg="#FF9800",
             fg="white",
@@ -135,7 +135,7 @@ class FaceRecognitionGUI:
         # 按钮4：清空数据库
         self.clear_db_btn = tk.Button(
             left_frame,
-            text="🗑️ 清空数据库",
+            text=" 清空数据库",
             command=self.clear_database,
             bg="#F44336",
             fg="white",
@@ -153,17 +153,17 @@ class FaceRecognitionGUI:
         # --- 人脸识别区域 ---
         recog_label = tk.Label(
             left_frame,
-            text="🔍 人脸识别",
+            text=" 人脸识别",
             font=("Arial", 14, "bold"),
             bg="#FFF3E0",
-            pady=5
+            # pady=5
         )
         recog_label.pack(fill=tk.X, pady=(5, 5))
         
         # 按钮5：识别图片
         self.recog_image_btn = tk.Button(
             left_frame,
-            text="🖼️ 识别图片中的人脸",
+            text=" 识别图片中的人脸",
             command=self.recognize_image,
             bg="#9C27B0",
             fg="white",
@@ -177,7 +177,7 @@ class FaceRecognitionGUI:
         # 按钮6：打开摄像头
         self.camera_btn = tk.Button(
             left_frame,
-            text="📷 打开摄像头识别",
+            text=" 打开摄像头识别",
             command=self.toggle_camera,
             bg="#00BCD4",
             fg="white",
@@ -195,10 +195,10 @@ class FaceRecognitionGUI:
         # --- 设置区域 ---
         settings_label = tk.Label(
             left_frame,
-            text="⚙️ 设置",
+            text=" 设置",
             font=("Arial", 14, "bold"),
             bg="#E8EAF6",
-            pady=5
+            # pady=5
         )
         settings_label.pack(fill=tk.X, pady=(5, 5))
         
@@ -228,10 +228,10 @@ class FaceRecognitionGUI:
         # 显示区域标题
         display_title = tk.Label(
             right_frame,
-            text="📺 显示区域",
+            text=" 显示区域",
             font=("Arial", 14, "bold"),
             bg="#F5F5F5",
-            pady=5
+            # pady=5
         )
         display_title.pack(fill=tk.X)
         
@@ -242,7 +242,7 @@ class FaceRecognitionGUI:
         # 提示文字（初始状态）
         self.canvas.create_text(
             300, 200,
-            text="👆 点击左侧按钮开始使用",
+            text=" 点击左侧按钮开始使用",
             font=("Arial", 16),
             fill="white",
             tags="hint"
@@ -251,10 +251,10 @@ class FaceRecognitionGUI:
         # 日志输出区域
         log_label = tk.Label(
             right_frame,
-            text="📋 操作日志",
+            text=" 操作日志",
             font=("Arial", 12, "bold"),
             bg="#FFFDE7",
-            pady=5
+            # pady=5
         )
         log_label.pack(fill=tk.X)
         
@@ -269,8 +269,8 @@ class FaceRecognitionGUI:
         
         # 显示欢迎信息
         self.log("=" * 50)
-        self.log("✨ 欢迎使用人脸识别系统！")
-        self.log("💡 提示：请先导入人脸数据库，然后就可以开始识别了")
+        self.log(" 欢迎使用人脸识别系统！")
+        self.log(" 提示：请先导入人脸数据库，然后就可以开始识别了")
         self.log("=" * 50)
     
     def log(self, message):
@@ -298,28 +298,28 @@ class FaceRecognitionGUI:
             小红/
                 照片1.jpg
         """
-        self.log("\n📂 准备导入人脸...")
+        self.log("\n 准备导入人脸...")
         
         # 打开文件夹选择对话框
         directory = filedialog.askdirectory(title="选择包含人脸照片的文件夹")
         
         # 如果用户没有选择文件夹（点了取消）
         if not directory:
-            self.log("❌ 已取消导入")
+            self.log(" 已取消导入")
             return
         
-        self.log(f"📁 选择的文件夹: {directory}")
-        self.log("⏳ 正在导入，请稍候...")
+        self.log(f" 选择的文件夹: {directory}")
+        self.log(" 正在导入，请稍候...")
         
         try:
             # 创建数据库对象并导入
             db = FaceDatabase(self.db_path)
             db.import_from_directory(directory)
             
-            self.log("✅ 导入完成！")
+            self.log(" 导入完成！")
             messagebox.showinfo("成功", "人脸导入成功！")
         except Exception as e:
-            self.log(f"❌ 导入失败: {str(e)}")
+            self.log(f" 导入失败: {str(e)}")
             messagebox.showerror("错误", f"导入失败：{str(e)}")
     
     def add_single_face(self):
@@ -328,7 +328,7 @@ class FaceRecognitionGUI:
         让用户选择一张照片，并输入这个人的名字
         然后把这张人脸添加到数据库
         """
-        self.log("\n➕ 准备添加单张人脸...")
+        self.log("\n 准备添加单张人脸...")
         
         # 打开文件选择对话框
         image_path = filedialog.askopenfilename(
@@ -341,19 +341,19 @@ class FaceRecognitionGUI:
         
         # 如果用户没有选择文件
         if not image_path:
-            self.log("❌ 已取消添加")
+            self.log(" 已取消添加")
             return
         
         # 弹出对话框，让用户输入名字
         name = tk.simpledialog.askstring("输入名字", "请输入这个人的名字：")
         
         if not name:
-            self.log("❌ 已取消添加（未输入名字）")
+            self.log(" 已取消添加（未输入名字）")
             return
         
-        self.log(f"📄 图片: {os.path.basename(image_path)}")
-        self.log(f"👤 名字: {name}")
-        self.log("⏳ 正在处理...")
+        self.log(f" 图片: {os.path.basename(image_path)}")
+        self.log(f" 名字: {name}")
+        self.log(" 正在处理...")
         
         try:
             # 创建数据库对象并添加人脸
@@ -362,13 +362,13 @@ class FaceRecognitionGUI:
             
             if success:
                 db.save_database()
-                self.log("✅ 添加成功！")
+                self.log(" 添加成功！")
                 messagebox.showinfo("成功", f"已成功添加 {name} 的人脸！")
             else:
-                self.log("❌ 添加失败（可能图片中没有检测到人脸）")
+                self.log(" 添加失败（可能图片中没有检测到人脸）")
                 messagebox.showwarning("失败", "添加失败，请确保图片中有清晰的人脸")
         except Exception as e:
-            self.log(f"❌ 添加失败: {str(e)}")
+            self.log(f" 添加失败: {str(e)}")
             messagebox.showerror("错误", f"添加失败：{str(e)}")
     
     def view_database(self):
@@ -377,14 +377,14 @@ class FaceRecognitionGUI:
         显示数据库中保存了哪些人的人脸
         就像查看通讯录一样
         """
-        self.log("\n👁️ 查看数据库...")
+        self.log("\n 查看数据库...")
         
         try:
             # 加载数据库
             db = FaceDatabase(self.db_path)
             
             if not db.face_names:
-                self.log("📭 数据库是空的")
+                self.log(" 数据库是空的")
                 messagebox.showinfo("数据库信息", "数据库中还没有任何人脸数据")
                 return
             
@@ -397,14 +397,14 @@ class FaceRecognitionGUI:
             info += "详细信息：\n"
             info += "-" * 30 + "\n"
             for name, count in sorted(name_counts.items()):
-                info += f"👤 {name}: {count} 张照片\n"
-                self.log(f"👤 {name}: {count} 张照片")
+                info += f" {name}: {count} 张照片\n"
+                self.log(f" {name}: {count} 张照片")
             
             # 显示信息对话框
             messagebox.showinfo("数据库信息", info)
             
         except Exception as e:
-            self.log(f"❌ 查看失败: {str(e)}")
+            self.log(f" 查看失败: {str(e)}")
             messagebox.showerror("错误", f"查看失败：{str(e)}")
     
     def clear_database(self):
@@ -413,17 +413,17 @@ class FaceRecognitionGUI:
         删除数据库中的所有人脸数据
         注意：这个操作很危险，不能撤销！
         """
-        self.log("\n🗑️ 准备清空数据库...")
+        self.log("\n 准备清空数据库...")
         
         # 弹出确认对话框
         result = messagebox.askyesno(
-            "⚠️ 危险操作",
+            " 危险操作",
             "确定要清空数据库吗？\n\n这将删除所有人脸数据，且无法恢复！",
             icon="warning"
         )
         
         if not result:
-            self.log("❌ 已取消清空操作")
+            self.log(" 已取消清空操作")
             return
         
         try:
@@ -431,10 +431,10 @@ class FaceRecognitionGUI:
             db = FaceDatabase(self.db_path)
             db.clear_database()
             
-            self.log("✅ 数据库已清空")
+            self.log(" 数据库已清空")
             messagebox.showinfo("完成", "数据库已清空")
         except Exception as e:
-            self.log(f"❌ 清空失败: {str(e)}")
+            self.log(f" 清空失败: {str(e)}")
             messagebox.showerror("错误", f"清空失败：{str(e)}")
     
     def recognize_image(self):
@@ -443,7 +443,7 @@ class FaceRecognitionGUI:
         让用户选择一张照片，程序会识别照片中的人是谁
         并在照片上画框和标注名字
         """
-        self.log("\n🖼️ 准备识别图片...")
+        self.log("\n 准备识别图片...")
         
         # 打开文件选择对话框
         image_path = filedialog.askopenfilename(
@@ -455,16 +455,16 @@ class FaceRecognitionGUI:
         )
         
         if not image_path:
-            self.log("❌ 已取消识别")
+            self.log(" 已取消识别")
             return
         
-        self.log(f"📄 图片: {os.path.basename(image_path)}")
-        self.log("⏳ 正在识别...")
+        self.log(f" 图片: {os.path.basename(image_path)}")
+        self.log(" 正在识别...")
         
         try:
             # 初始化识别器（如果还没有初始化）
             if self.recognizer is None:
-                self.log("🔧 正在初始化识别器...")
+                self.log(" 正在初始化识别器...")
                 self.recognizer = YOLOFaceRecognizer(
                     db_path=self.db_path,
                     confidence=self.confidence_var.get(),
@@ -474,7 +474,7 @@ class FaceRecognitionGUI:
             # 读取图片
             frame = cv2.imread(image_path)
             if frame is None:
-                self.log("❌ 无法读取图片")
+                self.log(" 无法读取图片")
                 messagebox.showerror("错误", "无法读取图片文件")
                 return
             
@@ -488,9 +488,9 @@ class FaceRecognitionGUI:
             self.display_image(output_frame)
             
             # 显示识别结果
-            self.log(f"✅ 识别完成！检测到 {len(results)} 张人脸：")
+            self.log(f" 识别完成！检测到 {len(results)} 张人脸：")
             for name, conf, bbox in results:
-                self.log(f"   👤 {name} (信心值: {conf:.2f})")
+                self.log(f"    {name} (信心值: {conf:.2f})")
             
             # 弹出结果信息
             if len(results) == 0:
@@ -498,11 +498,11 @@ class FaceRecognitionGUI:
             else:
                 result_text = f"检测到 {len(results)} 张人脸：\n\n"
                 for name, conf, bbox in results:
-                    result_text += f"👤 {name} (信心值: {conf:.2f})\n"
+                    result_text += f" {name} (信心值: {conf:.2f})\n"
                 messagebox.showinfo("识别结果", result_text)
                 
         except Exception as e:
-            self.log(f"❌ 识别失败: {str(e)}")
+            self.log(f" 识别失败: {str(e)}")
             messagebox.showerror("错误", f"识别失败：{str(e)}")
     
     def toggle_camera(self):
@@ -523,12 +523,12 @@ class FaceRecognitionGUI:
         【启动摄像头识别】
         打开摄像头，实时识别视频中的人脸
         """
-        self.log("\n📷 正在启动摄像头...")
+        self.log("\n 正在启动摄像头...")
         
         try:
             # 初始化识别器（如果还没有初始化）
             if self.recognizer is None:
-                self.log("🔧 正在初始化识别器...")
+                self.log(" 正在初始化识别器...")
                 self.recognizer = YOLOFaceRecognizer(
                     db_path=self.db_path,
                     confidence=self.confidence_var.get(),
@@ -537,16 +537,16 @@ class FaceRecognitionGUI:
             
             # 设置状态
             self.camera_running = True
-            self.camera_btn.config(text="⏹️ 关闭摄像头", bg="#F44336")
+            self.camera_btn.config(text=" 关闭摄像头", bg="#F44336")
             
             # 在新线程中运行摄像头（避免界面卡住）
             self.camera_thread = threading.Thread(target=self.camera_loop, daemon=True)
             self.camera_thread.start()
             
-            self.log("✅ 摄像头已启动")
+            self.log(" 摄像头已启动")
             
         except Exception as e:
-            self.log(f"❌ 启动失败: {str(e)}")
+            self.log(f" 启动失败: {str(e)}")
             messagebox.showerror("错误", f"启动摄像头失败：{str(e)}")
             self.camera_running = False
     
@@ -555,10 +555,10 @@ class FaceRecognitionGUI:
         【停止摄像头】
         关闭摄像头，停止识别
         """
-        self.log("\n⏹️ 正在关闭摄像头...")
+        self.log("\n 正在关闭摄像头...")
         self.camera_running = False
-        self.camera_btn.config(text="📷 打开摄像头识别", bg="#00BCD4")
-        self.log("✅ 摄像头已关闭")
+        self.camera_btn.config(text=" 打开摄像头识别", bg="#00BCD4")
+        self.log(" 摄像头已关闭")
     
     def camera_loop(self):
         """
@@ -570,7 +570,7 @@ class FaceRecognitionGUI:
         cap = cv2.VideoCapture(0)
         
         if not cap.isOpened():
-            self.log("❌ 无法打开摄像头")
+            self.log(" 无法打开摄像头")
             self.camera_running = False
             return
         
