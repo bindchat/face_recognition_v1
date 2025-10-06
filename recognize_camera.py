@@ -9,6 +9,7 @@
 # 导入需要的工具
 import sys  # 系统工具
 import argparse  # 命令行参数解析器
+import os  # 读取环境变量以获取中文字体路径
 from face_recognition_yolo import YOLOFaceRecognizer  # 导入人脸识别器
 
 
@@ -59,6 +60,10 @@ def main():
     # 参数4：检测的信心阈值
     parser.add_argument('--confidence', '-c', type=float, default=0.5,
                        help='检测信心阈值，范围0-1（默认：0.5表示50%把握）')
+
+    # 参数5：中文字体设置
+    parser.add_argument('--font', help='中文字体文件路径（如 NotoSansCJK 或思源黑体）')
+    parser.add_argument('--font-size', type=int, default=20, help='标签文字字号（默认：20）')
     
     # 解析用户输入的参数
     args = parser.parse_args()
@@ -68,10 +73,13 @@ def main():
     print("（第一次运行时可能需要下载AI模型，请耐心等待）")
     
     # 创建识别器对象，传入用户指定的参数
+    # 支持中文字体路径通过环境变量或默认路径自动发现
     recognizer = YOLOFaceRecognizer(
         db_path=args.db,              # 使用哪个人脸数据库
         yolo_model=args.model,        # 使用哪个YOLO模型
-        confidence=args.confidence    # 检测的信心要求
+        confidence=args.confidence,   # 检测的信心要求
+        font_path=(args.font or os.getenv('CHINESE_FONT_PATH')),
+        font_size=args.font_size
     )
     
     # 【第2步】开始摄像头识别
