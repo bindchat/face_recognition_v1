@@ -66,6 +66,12 @@ def main():
     parser.add_argument('--no-show', action='store_true', 
                        help='不显示结果窗口（只保存不显示）')
 
+    # 可选参数6：GPU/精度
+    parser.add_argument('--device', default=None,
+                       help='推理设备：如 0/cuda:0 或 cpu（默认自动）')
+    parser.add_argument('--no-half', action='store_true',
+                       help='禁用半精度FP16（Jetson如遇不兼容时使用）')
+
     # 可选参数6：中文字体路径与字号
     parser.add_argument('--font', help='中文字体文件路径（如 NotoSansCJK 或思源黑体）')
     parser.add_argument('--font-size', type=int, default=20, help='标签文字字号（默认：20）')
@@ -84,7 +90,9 @@ def main():
         yolo_model=args.model,        # 使用哪个YOLO模型
         confidence=args.confidence,   # 检测的信心要求
         font_path=(args.font or os.getenv('CHINESE_FONT_PATH')),
-        font_size=args.font_size
+        font_size=args.font_size,
+        device=args.device,
+        use_half=(not args.no_half)
     )
     
     # 【第2步】处理图片

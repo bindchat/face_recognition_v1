@@ -13,6 +13,10 @@ import face_recognition  # 人脸识别工具
 import pickle  # 用来读取保存的数据
 import os  # 操作系统工具
 from ultralytics import YOLO  # YOLO模型 - 快速物体检测工具
+try:
+    import torch  # 可选：用于检测CUDA与半精度可用性
+except Exception:
+    torch = None
 from PIL import Image, ImageDraw, ImageFont  # 使用Pillow渲染中文文字
 from typing import Optional, List, Dict, Union
 
@@ -27,7 +31,8 @@ class YOLOFaceRecognizer:
     """
     
     def __init__(self, db_path='face_database.pkl', yolo_model='yolov8n.pt', confidence=0.5,
-                 font_path: Optional[str] = None, font_size: int = 20):
+                 font_path: Optional[str] = None, font_size: int = 20,
+                 device: Optional[Union[str, int]] = None, use_half: Optional[bool] = None):
         """
         【初始化识别器】
         准备好识别器需要的所有工具和数据
@@ -46,6 +51,9 @@ class YOLOFaceRecognizer:
         self.font_path = font_path  # 可选：自定义中文字体路径
         self.font_size = font_size  # 可选：中文标签字号
         self._font = None  # 延迟加载字体
+        # 推理设备/精度配置（为 Jetson GPU 友好）
+        self.yolo_device = self._resolve_device(device)
+        self.yolo_half = self._resolve_half_precision(use_half)
         
         # 加载人脸数据库
         self.load_database()
@@ -53,7 +61,41 @@ class YOLOFaceRecognizer:
         # 初始化YOLO模型
         print("正在加载YOLO模型...")
         self.yolo_model = YOLO(yolo_model)  # 加载AI模型
-        print(" YOLO模型加载完成")
+        print(f" YOLO模型加载完成（device={self.yolo_device or 'auto'}, half={self.yolo_half}）")
+        # 轻量化 GPU 预热，降低首帧延迟
+        self._warmup_model()
+
+    def _resolve_device(self, device_hint: Optional[Union[str, int]]) -> Optional[Union[str, int]]:
+        # 显式指定优先
+        if device_hint is not None and device_hint != '':
+            return device_hint
+        # 自动：如果可用则用 CUDA:0，否则 CPU
+        try:
+            if torch is not None and torch.cuda.is_available():
+                return 0
+        except Exception:
+            pass
+        return 'cpu'
+
+    def _resolve_half_precision(self, use_half_hint: Optional[bool]) -> bool:
+        if isinstance(use_half_hint, bool):
+            return use_half_hint
+        # 自动：仅在 CUDA 上默认使用半精度（Jetson 友好，节省显存）
+        try:
+            return bool(torch and torch.cuda.is_available())
+        except Exception:
+            return False
+
+    def _warmup_model(self) -> None:
+        try:
+            # 仅在 CUDA 上进行一次小分辨率的空跑，触发内核编译/权重搬运
+            if self.yolo_device == 'cpu' or self.yolo_device == 'mps':
+                return
+            dummy = np.zeros((320, 320, 3), dtype=np.uint8)
+            _ = self.yolo_model(dummy, verbose=False, device=self.yolo_device, half=self.yolo_half)
+        except Exception:
+            # 预热失败不应影响后续功能
+            pass
 
     def _resolve_font_path(self) -> Optional[str]:
         """
@@ -207,7 +249,12 @@ class YOLOFaceRecognizer:
         
         # 【第1步】使用YOLO检测人脸位置
         # 就像用放大镜在照片上找所有的脸
-        yolo_results = self.yolo_model(frame, verbose=False)
+        yolo_results = self.yolo_model(
+            frame,
+            verbose=False,
+            device=self.yolo_device,
+            half=self.yolo_half,
+        )
         
         # 【第2步】处理每个检测到的人脸
         for result in yolo_results:
@@ -443,6 +490,10 @@ def main():
                        help='YOLO模型路径（默认：yolov8n.pt）')
     parser.add_argument('--confidence', type=float, default=0.5, 
                        help='检测信心阈值（默认：0.5）')
+    parser.add_argument('--device', default=None,
+                       help='推理设备：如 0/cuda:0 或 cpu（默认自动检测）')
+    parser.add_argument('--no-half', action='store_true',
+                       help='禁用半精度FP16（Jetson上如遇问题可加该参数）')
     
     # 创建子命令（两种模式）
     subparsers = parser.add_subparsers(dest='mode', help='识别模式')
@@ -471,7 +522,9 @@ def main():
     recognizer = YOLOFaceRecognizer(
         db_path=args.db,
         yolo_model=args.model,
-        confidence=args.confidence
+        confidence=args.confidence,
+        device=args.device,
+        use_half=(not args.no_half)
     )
     
     # 根据模式执行相应操作
