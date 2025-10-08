@@ -273,6 +273,57 @@ python recognize_image.py photo.jpg --confidence 0.7
 - numpy
 - pillow
 
+## 在 Jetson Orin Nano 上使用 GPU 加速
+
+以下说明帮助你在 NVIDIA Jetson Orin Nano 开发者套件上启用 GPU 推理。
+
+### 1. 基础环境准备（JetPack）
+
+- 建议使用预装 JetPack 的官方系统镜像（包含 CUDA/cuDNN/TensorRT）。
+- 更新系统依赖：
+```bash
+sudo apt update && sudo apt install -y python3-pip python3-dev cmake libopenblas-dev liblapack-dev
+```
+
+### 2. 安装 Python 依赖
+
+Jetson 上安装 `dlib` 和 `opencv-python` 可能较慢，确保网络通畅：
+```bash
+pip3 install --upgrade pip
+pip3 install -r requirements.txt
+```
+
+> 提示：如遇 `dlib` 编译困难，可尝试预编译 wheel 或参考官方仓库的安装建议。
+
+### 3. 运行时启用 GPU/半精度
+
+本项目已支持选择推理设备与半精度 FP16。默认将自动检测 CUDA 并在可用时启用半精度（更省显存，Jetson 友好）。
+
+- 图像识别（GPU，自动设备+FP16）：
+```bash
+python3 recognize_image.py photo.jpg --device 0
+```
+
+- 摄像头识别（指定 GPU0 并启用 FP16）：
+```bash
+python3 recognize_camera.py --device 0
+```
+
+- 如遇半精度不兼容或显示异常，可禁用 FP16：
+```bash
+python3 recognize_camera.py --device 0 --no-half
+```
+
+### 4. 首帧加速（GPU 预热）
+
+程序会在加载模型后进行一次轻量 GPU 预热，以减少首帧延迟；如失败会自动忽略，不影响正常运行。
+
+### 5. 常见问题（Jetson）
+
+- 启动慢或首帧卡顿：首次运行需要下载 YOLO 模型且触发 CUDA/Tensor 核编译，属正常现象；后续运行会更快。
+- 显存不足：使用较小的模型（如 `yolov8n.pt`），或添加 `--no-half`/降低分辨率。
+- 摄像头无法打开：检查 `/dev/video*` 权限和设备号，尝试 `--camera-id 0/1/2`。
+
 ## 许可证
 
 本项目是开源的，采用 MIT 许可证。
