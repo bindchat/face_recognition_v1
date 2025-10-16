@@ -241,10 +241,10 @@ class FaceRecognitionGUI:
         relay_btn_frame = tk.Frame(left_frame)
         relay_btn_frame.pack(fill=tk.X, padx=10, pady=8)
 
-        self.relay_on_btn = tk.Button(
+        self.relay_toggle_btn = tk.Button(
             relay_btn_frame,
             text=" 打开继电器",
-            command=self.relay_turn_on,
+            command=self.relay_toggle,
             bg="#4CAF50",
             fg="white",
             font=("Arial", 11),
@@ -252,20 +252,12 @@ class FaceRecognitionGUI:
             relief=tk.RAISED,
             borderwidth=2,
         )
-        self.relay_on_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
-
-        self.relay_off_btn = tk.Button(
-            relay_btn_frame,
-            text=" 关闭继电器",
-            command=self.relay_turn_off,
-            bg="#F44336",
-            fg="white",
-            font=("Arial", 11),
-            cursor="hand2",
-            relief=tk.RAISED,
-            borderwidth=2,
-        )
-        self.relay_off_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(5, 0))
+        self.relay_toggle_btn.pack(fill=tk.X)
+        # 初始化按钮文本/颜色
+        try:
+            self.update_relay_button()
+        except Exception:
+            pass
         
         # ============ 右侧显示区域 ============
         
@@ -549,35 +541,35 @@ class FaceRecognitionGUI:
             self.log(f" 识别失败: {str(e)}")
             messagebox.showerror("错误", f"识别失败：{str(e)}")
 
-    def relay_turn_on(self):
+    def relay_toggle(self):
         """
-        【打开继电器】
+        【开/关继电器】（单按钮切换）
         """
         if not self.relay.available():
             self.log(" 继电器不可用：当前环境未安装 Jetson.GPIO")
             messagebox.showwarning("提示", "当前环境不支持 Jetson.GPIO，无法控制继电器")
             return
         try:
-            self.relay.on()
-            self.log(" 继电器已打开")
+            self.relay.toggle()
+            if self.relay.is_on():
+                self.log(" 继电器已打开")
+            else:
+                self.log(" 继电器已关闭")
+            self.update_relay_button()
         except Exception as e:
-            self.log(f" 打开继电器失败: {str(e)}")
-            messagebox.showerror("错误", f"打开继电器失败：{str(e)}")
+            self.log(f" 切换继电器失败: {str(e)}")
+            messagebox.showerror("错误", f"切换继电器失败：{str(e)}")
 
-    def relay_turn_off(self):
+    def update_relay_button(self):
         """
-        【关闭继电器】
+        根据继电器状态更新按钮的文本和颜色。
         """
-        if not self.relay.available():
-            self.log(" 继电器不可用：当前环境未安装 Jetson.GPIO")
-            messagebox.showwarning("提示", "当前环境不支持 Jetson.GPIO，无法控制继电器")
+        if getattr(self, 'relay_toggle_btn', None) is None:
             return
-        try:
-            self.relay.off()
-            self.log(" 继电器已关闭")
-        except Exception as e:
-            self.log(f" 关闭继电器失败: {str(e)}")
-            messagebox.showerror("错误", f"关闭继电器失败：{str(e)}")
+        if self.relay.is_on():
+            self.relay_toggle_btn.config(text=" 关闭继电器", bg="#F44336")
+        else:
+            self.relay_toggle_btn.config(text=" 打开继电器", bg="#4CAF50")
     
     def toggle_camera(self):
         """
