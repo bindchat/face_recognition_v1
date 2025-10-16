@@ -15,6 +15,7 @@ from PIL import Image, ImageTk  # 图像处理工具，用来在界面上显示�
 import os  # 文件操作工具
 from face_database import FaceDatabase  # 人脸数据库管理
 from face_recognition_yolo import YOLOFaceRecognizer  # 人脸识别器
+from relay_control import RelayControl  # 继电器控制
 
 
 class FaceRecognitionGUI:
@@ -41,6 +42,7 @@ class FaceRecognitionGUI:
         self.recognizer = None  # 识别器对象（暂时为空）
         self.camera_running = False  # 摄像头是否正在运行
         self.camera_thread = None  # 摄像头线程
+        self.relay = RelayControl(pin=18, mode="BOARD")  # 继电器控制（BOARD 18）
         
         # 创建界面
         self.create_widgets()
@@ -222,6 +224,48 @@ class FaceRecognitionGUI:
             variable=self.confidence_var
         )
         self.confidence_scale.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        # 分隔线
+        separator3 = ttk.Separator(left_frame, orient=tk.HORIZONTAL)
+        separator3.pack(fill=tk.X, padx=10, pady=15)
+
+        # --- 继电器控制区域 ---
+        relay_label = tk.Label(
+            left_frame,
+            text=" 继电器控制",
+            font=("Arial", 14, "bold"),
+            bg="#E0F7FA",
+        )
+        relay_label.pack(fill=tk.X)
+
+        relay_btn_frame = tk.Frame(left_frame)
+        relay_btn_frame.pack(fill=tk.X, padx=10, pady=8)
+
+        self.relay_on_btn = tk.Button(
+            relay_btn_frame,
+            text=" 打开继电器",
+            command=self.relay_turn_on,
+            bg="#4CAF50",
+            fg="white",
+            font=("Arial", 11),
+            cursor="hand2",
+            relief=tk.RAISED,
+            borderwidth=2,
+        )
+        self.relay_on_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+
+        self.relay_off_btn = tk.Button(
+            relay_btn_frame,
+            text=" 关闭继电器",
+            command=self.relay_turn_off,
+            bg="#F44336",
+            fg="white",
+            font=("Arial", 11),
+            cursor="hand2",
+            relief=tk.RAISED,
+            borderwidth=2,
+        )
+        self.relay_off_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(5, 0))
         
         # ============ 右侧显示区域 ============
         
@@ -504,6 +548,36 @@ class FaceRecognitionGUI:
         except Exception as e:
             self.log(f" 识别失败: {str(e)}")
             messagebox.showerror("错误", f"识别失败：{str(e)}")
+
+    def relay_turn_on(self):
+        """
+        【打开继电器】
+        """
+        if not self.relay.available():
+            self.log(" 继电器不可用：当前环境未安装 Jetson.GPIO")
+            messagebox.showwarning("提示", "当前环境不支持 Jetson.GPIO，无法控制继电器")
+            return
+        try:
+            self.relay.on()
+            self.log(" 继电器已打开")
+        except Exception as e:
+            self.log(f" 打开继电器失败: {str(e)}")
+            messagebox.showerror("错误", f"打开继电器失败：{str(e)}")
+
+    def relay_turn_off(self):
+        """
+        【关闭继电器】
+        """
+        if not self.relay.available():
+            self.log(" 继电器不可用：当前环境未安装 Jetson.GPIO")
+            messagebox.showwarning("提示", "当前环境不支持 Jetson.GPIO，无法控制继电器")
+            return
+        try:
+            self.relay.off()
+            self.log(" 继电器已关闭")
+        except Exception as e:
+            self.log(f" 关闭继电器失败: {str(e)}")
+            messagebox.showerror("错误", f"关闭继电器失败：{str(e)}")
     
     def toggle_camera(self):
         """
@@ -651,6 +725,11 @@ class FaceRecognitionGUI:
         """
         if self.camera_running:
             self.stop_camera()
+        # 清理继电器 GPIO
+        try:
+            self.relay.cleanup()
+        except Exception:
+            pass
         self.root.destroy()
 
 
